@@ -1,0 +1,11 @@
+services:
+  esp-idf:
+    build: .
+    volumes:
+      - ./.:/projects
+    devices:
+      - /dev/ttyUSB0
+    stdin_open: true
+    tty: true
+    restart: 'no'
+    working_dir: /projects

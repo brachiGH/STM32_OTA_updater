@@ -1,0 +1,4 @@
+cert/
+venv/
+__pycache__/
+deviceModels/
