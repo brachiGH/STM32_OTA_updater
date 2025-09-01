@@ -1,8 +1,14 @@
 # STM32 Over The Air Update System
 
-A bootloader for stm32 with OTA update using a esp32 connect via uart.
+An educational Over The Air Update System example. This example is a stm32 bootloader with OTA update that uses a esp32 connect via uart.
+
+### How it Works
 
 <img src="diagram.png" alt="diagram" width="400"/>
+
+Sectors:
+
+<img src="table.png" alt="Sectors Table" width="700"/>
 
 ```
 /* Memories definition */
@@ -14,9 +20,9 @@ MEMORY
   FIRMWAREID (rwx)   : ORIGIN = 0x0807FFF8,  LENGTH = 8         // Firmware ID
 }
 ```
-<img src="table.png" alt="Sectors Table" width="700"/>
 
 Your Firmware memories definition should be samething like this:
+
 ```
 MEMORY
 {
@@ -24,6 +30,55 @@ MEMORY
   FLASH    (rx)   : ORIGIN = 0x8008000,    LENGTH = 480K - 8
 }
 ```
+
+### setup
+
+Inside `/bootloader/Core/Src/main.c` line 77 - 81:
+
+```
+const FIRMWARE_INFO _deviceInfo_Factory = {
+    .firmwareVersionId = 1,
+    .deviceModelId = 1,
+    .deviceUniqueId = 1,
+};
+```
+
+these struct contains information about the current device, `firmwareVersionId` this is used us the factory recovery firmware,
+`deviceModelId` this field is used to identify the correct firmware for this device, `deviceUniqueId` an ID the deice.
+
+### Server Firmware Repository Layout
+
+```
+updaterServer/
+└─ deviceModels/
+  ├─ MODEL_A/                # Folder name == deviceModelId (string form or label)
+  │  ├─ 1/                   # Folder name == firmwareVersionId (integer as string)
+  │  │  └─ application.bin   # Firmware image (exact filename expected by server)
+  │  ├─ 2/
+  │  │  └─ application.bin
+  │  └─ 3/
+  │     └─ application.bin
+  └─ MODEL_B/
+    ├─ 1/
+    │  └─ application.bin
+    └─ 4/
+      └─ application.bin
+```
+
+Rules:
+- deviceModels: root catalog of all supported models.
+- Each first-level subfolder: one device model; its name must match the deviceModelId the bootloader.
+- Inside each model folder: one folder per firmwareVersionId.
+- Inside each version folder: application.bin (raw binary produced by the application build).
+
+
+Adding a new firmware:
+1. Build application with updated version constant.
+2. Copy resulting binary to: deviceModels/\<deviceModelId\>/\<newVersion\>/application.bin
+
+### Usage
+
+Read the `readme` files inside `updaterDevice` and `updateServer`.
 
 ## License
 
