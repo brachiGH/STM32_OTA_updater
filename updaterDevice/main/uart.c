@@ -31,8 +31,10 @@ void uart_init(QueueHandle_t *uart_queue)
     uart_driver_install(EX_UART_NUM, RX_BUF_SIZE * 2, 0, queue_size, uart_queue, 0);
     uart_param_config(EX_UART_NUM, &uart_config);
 
-    // Set UART log level
-    esp_log_level_set(TAG, ESP_LOG_INFO);
     // Set UART pins
     uart_set_pin(UART_NUM_2, TXD_PIN, RXD_PIN, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
+
+    //Set uart pattern detect function.
+    // uart_enable_pattern_det_baud_intr(EX_UART_NUM, __SYN, 1, 0, 0, 0);
+    // uart_pattern_queue_reset(EX_UART_NUM, queue_size);
 }
