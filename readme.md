@@ -10,6 +10,8 @@ Sectors:
 
 <img src="table.png" alt="Sectors Table" width="700"/>
 
+
+`STM******_FLASH.ld`:
 ```
 /* Memories definition */
 MEMORY
@@ -19,10 +21,24 @@ MEMORY
   APPFLASH   (rwx)   : ORIGIN = 0x08008000,  LENGTH = 480K - 8  // Application / Firmware
   FIRMWAREID (rwx)   : ORIGIN = 0x0807FFF8,  LENGTH = 8         // Firmware ID
 }
+
+
+/* Sections */
+SECTIONS
+{
+  
+
+  .application :
+  {
+    KEEP(*(.application))
+  } >APPFLASH
+
+}
 ```
 
 Your Firmware memories definition should be samething like this:
 
+`STM******_FLASH.ld`:
 ```
 MEMORY
 {
@@ -51,8 +67,8 @@ these struct contains information about the current device, `firmwareVersionId` 
 ```
 updaterServer/
 └─ deviceModels/
-  ├─ MODEL_A/                # Folder name == deviceModelId (string form or label)
-  │  ├─ 1/                   # Folder name == firmwareVersionId (integer as string)
+  ├─ MODEL_A/                # Folder name == deviceModelId (integer)
+  │  ├─ 1/                   # Folder name == firmwareVersionId (integer)
   │  │  └─ application.bin   # Firmware image (exact filename expected by server)
   │  ├─ 2/
   │  │  └─ application.bin
