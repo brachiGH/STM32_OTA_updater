@@ -214,6 +214,7 @@ int main(void)
 
       // If jump failed downlaod factory firmware. (if jump_to_app fails it returns)
       downloadRecoverFirmware = true;
+      println("Begin Downloading Factory Firmware...");
     }
   }
 
