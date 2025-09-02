@@ -30,7 +30,7 @@ typedef struct
 const uint8_t __NAK__CMD[CMD_TX_BUF_SIZE] = {__NAK};
 
 static QueueHandle_t uart_queue;
-static QueueHandle_t request_queue;
+static QueueHandle_t http_request_queue;
 
 static bool dataIntegrityCheck(const uint8_t *data, uint16_t len)
 {
@@ -52,7 +52,7 @@ static void requestHandler_task(void *pvParameters)
     assert(_path);
     while (1)
     {
-        if (xQueueReceive(request_queue, (void *)&event, portMAX_DELAY))
+        if (xQueueReceive(http_request_queue, (void *)&event, portMAX_DELAY))
         {
             memset(_path, 0x00, 256);
             if (event.cmd == _CMD_GET_LASTEST_VERSION_ID)
@@ -164,7 +164,7 @@ static void uart_event_task(void *pvParameters)
                         txBuff[1] = item.dataLen & 0xFF;
                         txBuff[2] = (item.dataLen & 0xFF00) >> 8;
 
-                        if (xQueueSend(request_queue, &item, 10) != pdPASS)
+                        if (xQueueSend(http_request_queue, &item, 10) != pdPASS)
                             goto sendNAK;
                     }
                     uart_write_bytes(EX_UART_NUM, txBuff, CMD_TX_BUF_SIZE);
@@ -199,7 +199,7 @@ void app_main(void)
 
     uart_init(&uart_queue);
 
-    request_queue = xQueueCreate(3, sizeof(resquest_item));
+    http_request_queue = xQueueCreate(3, sizeof(resquest_item));
 
     xTaskCreatePinnedToCore(uart_event_task, "uart event", 6144, NULL, 5, NULL, 0);
     xTaskCreatePinnedToCore(requestHandler_task, "request handler", 4096, NULL, 5, NULL, 1);
