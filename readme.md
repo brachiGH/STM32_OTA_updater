@@ -4,7 +4,7 @@ An educational Over The Air Update System example. This example is a stm32 bootl
 
 ### How it Works
 
-<img src="diagram.png" alt="diagram" width="400"/>
+<img src="diagram.png" alt="diagram" width="600"/>
 
 Sectors:
 
