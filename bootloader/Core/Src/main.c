@@ -210,6 +210,15 @@ int main(void)
   {
     if (GPIOC->IDR & BTN_PIN)
     {
+      /** Rest GPIO & uart6 */
+      RCC->AHB1ENR = 0;
+      GPIOA->MODER = 0xA800 0000;
+      GPIOC->MODER = 0;
+      GPIOC->AFR[0] = 0;
+      RCC->APB2ENR = 0;
+      USART6->CR1 = 0;
+      USART6->BRR = 0;
+
       jump_to_app();
 
       // If jump failed downlaod factory firmware. (if jump_to_app fails it returns)
