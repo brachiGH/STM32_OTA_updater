@@ -1,57 +1,40 @@
 # STM32 Over The Air (OTA) Update System
 
-An educational Over-The-Air (OTA) update system demonstrating secure firmware updates for STM32 microcontrollers. This project implements a custom bootloader on STM32 that communicates with an ESP32 WiFi module via UART to download and install firmware updates from a Python-based HTTPS server.
+An Over-The-Air (OTA) secure firmware update example for STM32 microcontrollers. This project implements a custom bootloader on STM32 that communicates with an ESP32 as a WiFi module over UART to download and install firmware updates from a Python-based HTTPS server.
 
-## Features
-
-- **Custom STM32 Bootloader**: Dual-bank flash management with application execution and update capabilities
-- **OTA Updates**: Wireless firmware updates via HTTPS
-- **Factory Recovery**: Built-in factory firmware recovery mechanism
-- **Version Management**: Automatic version checking and selective updates
-- **Secure Communication**: HTTPS with CRC integrity verification
-- **ESP32 WiFi Bridge**: Uses ESP32 as a WiFi-to-UART bridge for OTA functionality
-- **Multi-Device Support**: Server supports multiple device models with separate firmware versions
-
-## Prerequisites
-
-### Hardware Requirements
-- **STM32 Development Board** (tested on STM32F4 series with 512KB flash)
-- **ESP32 Development Board** (any ESP32 variant with WiFi)
-- USB cables for programming both boards
-- UART connection between STM32 and ESP32 (3 wires: TX, RX, GND)
-
-### Software Requirements
-- **For STM32 Bootloader & Application:**
-  - STM32CubeIDE or compatible ARM GCC toolchain
-  - STM32CubeMX (for configuration)
-- **For ESP32 Device:**
-  - Docker (recommended) or ESP-IDF v4.x+
-- **For Update Server:**
-  - Python 3.8 or higher
-  - pip package manager
-
-## Architecture
-
-### System Overview
-
-<img src="diagram.png" alt="System Architecture Diagram" width="600"/>
 
 The system consists of three main components:
 
 1. **STM32 Bootloader**: Custom bootloader that manages application firmware and OTA updates
-2. **ESP32 WiFi Bridge**: Handles HTTPS communication with the update server via UART commands
+2. **ESP32 WiFi Bridge**: Handles HTTPS communication with server
 3. **Update Server**: FastAPI-based server that hosts firmware binaries and serves update requests
 
-### Update Flow
+
+### Requirements
+- **For STM32 Bootloader & Application:** (tested on STM32F4)
+  - STM32CubeIDE or compatible ARM GCC toolchain
+  - STM32CubeMX (for configuration)
+- **For ESP32 Device:**
+  - Docker (recommended) or ESP-IDF v4.x+
+- **For Updates Server:**
+  - Python 3.8 or higher
+
+## Architecture
+
+### Control flow (Rest firmware to recovery or update to lastest)
+
+<img src="diagram.png" alt="System Architecture Diagram" width="600"/>
+
+### Firmaware Update Flow
 
 1. **Boot Process**:
    - STM32 bootloader checks for button press during power-on
    - If button pressed for 3 seconds: Factory firmware recovery
    - If button not pressed: Boot into application firmware
-   - If no valid application: Attempt to download latest firmware
+   - If the current firmware is not valid (currupted ): Attempt to download latest firmware
 
 2. **Firmware Update**:
-   - Application or bootloader requests latest version from server via ESP32
+   - Application or bootloader can request latest version
    - If newer version available, bootloader downloads it in chunks (1020 bytes each)
    - Each chunk is verified with CRC before writing to flash
    - After complete download, firmware info is saved and device restarts
@@ -60,6 +43,8 @@ The system consists of three main components:
    - Each firmware has a unique version ID
    - Server maintains separate firmware repositories per device model
    - Bootloader stores current firmware version in dedicated flash region
+
+## Impleamentation
 
 ### Memory Layout
 
@@ -286,18 +271,11 @@ updaterServer/
 - Second-level folders: Firmware version ID (incremental integers)
 - Binary file: Must be named exactly `application.bin`
 
-**Adding New Firmware:**
-
-1. Build your application with updated version number
-2. Locate the `.bin` file in your build output
-3. Create/navigate to: `deviceModels/<deviceModelId>/<newVersionId>/`
-4. Copy binary: `cp YourApp.bin deviceModels/1/2/application.bin`
-
 Example:
 ```bash
-# For device model 1, version 2
+# For device model '435', version '2'
 mkdir -p deviceModels/1/2
-cp ~/STM32Project/Debug/MyApp.bin deviceModels/1/2/application.bin
+cp ~/STM32Project/Debug/MyApp.bin deviceModels/435/2/application.bin
 ```
 
 #### Start the Update Server
@@ -307,13 +285,13 @@ cp ~/STM32Project/Debug/MyApp.bin deviceModels/1/2/application.bin
 sudo -E ./venv/bin/python server.py
 ```
 
-**Option 2: Using uvicorn with non-privileged port (recommended for development):**
+**Option 2: Using uvicorn with non-privileged port:**
 ```bash
 uvicorn server:app --host 0.0.0.0 --port 8443 \
   --ssl-keyfile=cert/server.key --ssl-certfile=cert/server.crt --reload
 ```
 
-**Option 3: Using uvicorn with port 443 (production):**
+**Option 3: Using uvicorn with port 443:**
 ```bash
 sudo -E ./venv/bin/uvicorn server:app --host 0.0.0.0 --port 443 \
   --ssl-keyfile=cert/server.key --ssl-certfile=cert/server.crt --reload
@@ -393,29 +371,6 @@ idf.py -p /dev/ttyUSB0 flash monitor
 2. Place factory firmware in server: `deviceModels/1/1/application.bin`
 3. Power on STM32 while holding the user button for 3 seconds
 4. Bootloader will download and install factory firmware
-
-### Performing OTA Updates
-
-1. **Prepare New Firmware:**
-   - Increment version number in your application code
-   - Build the application
-   - Copy `.bin` file to server: `deviceModels/<modelId>/<newVersion>/application.bin`
-
-2. **Trigger Update:**
-   - **Automatic**: Bootloader checks for updates on every boot
-   - **Manual**: Implement update check in your application and trigger bootloader via software reset
-
-3. **Update Process:**
-   - Bootloader queries server for latest version
-   - If newer version available, downloads firmware in chunks
-   - Verifies each chunk with CRC
-   - Writes to flash and updates version info
-   - Restarts device with new firmware
-
-### Button Functions
-
-- **Short Press**: Normal boot into application
-- **Hold 3 Seconds**: Factory firmware recovery (downloads version 1)
 
 ## API Endpoints
 
